@@ -12,17 +12,18 @@ typedef struct nodo
 char solicitar_caracter();
 int solicitar_entero();
 
-void agregar_frente(NODO **);
-void eliminar_final(NODO **);
-void agregar_preferencial(NODO **);
-void abandonar_cola(NODO **);
+void agregar_frente(NODO **, NODO **);
+void eliminar_final(NODO **, NODO **);
+void agregar_preferencial(NODO **, NODO **);
+void abandonar_cola(NODO **, NODO **);
 
-void imprimir_cola(NODO *);
-void limpiar_cola(NODO *);
+void imprimir_cola(NODO *, NODO *);
+void limpiar_cola(NODO *, NODO *);
 
 int main()
 {
-    NODO *cabecera = NULL;
+    NODO *cabecera_normal = NULL;
+    NODO *cabecera_preferencial = NULL;
     int op = 0;
 
     do
@@ -41,19 +42,19 @@ int main()
         switch (op)
         {
         case 1:
-            agregar_frente(&cabecera);
+            agregar_frente(&cabecera_preferencial, &cabecera_normal);
             break;
         case 2:
-            eliminar_final(&cabecera);
+            eliminar_final(&cabecera_preferencial, &cabecera_normal);
             break;
         case 3:
-            agregar_preferencial(&cabecera);
+            agregar_preferencial(&cabecera_preferencial, &cabecera_normal);
             break;
         case 4:
-            abandonar_cola(&cabecera);
+            abandonar_cola(&cabecera_preferencial, &cabecera_normal);
             break;
         case 5:
-            imprimir_cola(cabecera);
+            imprimir_cola(cabecera_preferencial, cabecera_normal);
             break;
         case 6:
             printf("\nSaliendo del programa...\n");
@@ -67,7 +68,7 @@ int main()
         }
     } while (op != 6);
 
-    limpiar_cola(cabecera);
+    limpiar_cola(cabecera_preferencial, cabecera_normal);
     return 0;
 }
 
@@ -126,7 +127,7 @@ int solicitar_entero()
     return num;
 }
 
-void agregar_frente(NODO **cabecera)
+void agregar_frente(NODO **cabecera_preferencial, NODO **cabecera_normal)
 {
     NODO *nuevo = malloc(sizeof(NODO));
 
@@ -141,21 +142,25 @@ void agregar_frente(NODO **cabecera)
     {
         printf("\nFORMARSE EN LA COLA");
         nuevo->dato = solicitar_caracter();
-        nuevo->siguiente = *cabecera;
-        *cabecera = nuevo;
-        imprimir_cola(*cabecera);
+        nuevo->siguiente = *cabecera_normal;
+        *cabecera_normal = nuevo;
+        imprimir_cola(*cabecera_preferencial, *cabecera_normal);
         return;
     }
 }
 
-void eliminar_final(NODO **cabecera)
+void eliminar_final(NODO **cabecera_preferencial, NODO **cabecera_normal)
 {
-    NODO *actual, *previo;
-    previo = NULL;
-    actual = *cabecera;
+    NODO *previo_preferencial, *actual_preferencial;
+    previo_preferencial = NULL;
+    actual_preferencial = *cabecera_preferencial;
+
+    NODO *previo_normal, *actual_normal;
+    previo_normal = NULL;
+    actual_normal = *cabecera_normal;
 
     // La lista esta vacia
-    if (actual == NULL)
+    if (actual_normal == NULL && actual_preferencial == NULL)
     {
         printf("Error. La cola esta vacia.\n");
         system("pause");
@@ -165,30 +170,60 @@ void eliminar_final(NODO **cabecera)
     // La lista contiene al menos un elemento
     else
     {
-        while (actual->siguiente != NULL)
+        if (actual_preferencial != NULL)
         {
-            previo = actual;
-            actual = actual->siguiente;
-        }
-
-        if (previo == NULL)
-        {
-            *cabecera = NULL;
-            free(actual);
-            imprimir_cola(*cabecera);
-            return;
+            // Recorrer hasta encontrar el ultimo nodo
+            while (actual_preferencial->siguiente != NULL)
+            {
+                previo_preferencial = actual_preferencial;
+                actual_preferencial = actual_preferencial->siguiente;
+            }
+            // Solo hay un nodo
+            if (previo_preferencial == NULL)
+            {
+                *cabecera_preferencial = NULL;
+                free(actual_preferencial);
+                imprimir_cola(*cabecera_preferencial, *cabecera_normal);
+                return;
+            }
+            // Hay dos o mas nodos
+            else
+            {
+                previo_preferencial->siguiente = NULL;
+                free(actual_preferencial);
+                imprimir_cola(*cabecera_preferencial, *cabecera_normal);
+                return;
+            }
         }
         else
         {
-            previo->siguiente = NULL;
-            free(actual);
-            imprimir_cola(*cabecera);
-            return;
+            // Recorrer hasta encontrar el ultimo nodo
+            while (actual_normal->siguiente != NULL)
+            {
+                previo_normal = actual_normal;
+                actual_normal = actual_normal->siguiente;
+            }
+            // Solo hay un nodo
+            if (previo_normal == NULL)
+            {
+                *cabecera_normal = NULL;
+                free(actual_normal);
+                imprimir_cola(*cabecera_preferencial, *cabecera_normal);
+                return;
+            }
+            // Hay dos o mas nodos
+            else
+            {
+                previo_normal->siguiente = NULL;
+                free(actual_normal);
+                imprimir_cola(*cabecera_preferencial, *cabecera_normal);
+                return;
+            }
         }
     }
 }
 
-void agregar_preferencial(NODO **cabecera)
+void agregar_preferencial(NODO **cabecera_preferencial, NODO **cabecera_normal)
 {
     NODO *nuevo = malloc(sizeof(NODO));
 
@@ -201,46 +236,27 @@ void agregar_preferencial(NODO **cabecera)
     }
     else
     {
-        NODO *actual, *previo;
-        previo = NULL;
-        actual = *cabecera;
-
-        printf("\nENTRADA PREFERENCIAL");
-        // La lista esta vacia
-        if (actual == NULL)
-        {
-            nuevo->dato = solicitar_caracter();
-            nuevo->siguiente = NULL;
-            *cabecera = nuevo;
-            imprimir_cola(*cabecera);
-            return;
-        }
-
-        // La lista contiene al menos un elemento
-        else
-        {
-            while (actual != NULL)
-            {
-                previo = actual;
-                actual = actual->siguiente;
-            }
-            nuevo->dato = solicitar_caracter();
-            nuevo->siguiente = NULL;
-            previo->siguiente = nuevo;
-            imprimir_cola(*cabecera);
-            return;
-        }
+        printf("\nAGREGAR PREFERENCIAL");
+        nuevo->dato = solicitar_caracter();
+        nuevo->siguiente = *cabecera_preferencial;
+        *cabecera_preferencial = nuevo;
+        imprimir_cola(*cabecera_preferencial, *cabecera_normal);
+        return;
     }
 }
 
-void abandonar_cola(NODO **cabecera)
+void abandonar_cola(NODO **cabecera_preferencial, NODO **cabecera_normal)
 {
-    NODO *previo, *actual;
-    previo = NULL;
-    actual = *cabecera;
+    NODO *previo_preferencial, *actual_preferencial;
+    previo_preferencial = NULL;
+    actual_preferencial = *cabecera_preferencial;
+
+    NODO *previo_normal, *actual_normal;
+    previo_normal = NULL;
+    actual_normal = *cabecera_normal;
 
     // La cola esta vacia
-    if (actual == NULL)
+    if (actual_normal == NULL && actual_preferencial == NULL)
     {
         printf("Error. La cola esta vacia.\n");
         system("pause");
@@ -252,46 +268,77 @@ void abandonar_cola(NODO **cabecera)
         printf("\nABANDONAR COLA");
         caracter = solicitar_caracter();
 
-        // Recorrido de busqueda
-        while (actual->dato != caracter && actual->siguiente != NULL)
+        // Normal contiene al menos un elemento
+        if (actual_normal != NULL)
         {
-            previo = actual;
-            actual = actual->siguiente;
+            // Recorrido de busqueda
+            while (actual_normal->dato != caracter && actual_normal->siguiente != NULL)
+            {
+                previo_normal = actual_normal;
+                actual_normal = actual_normal->siguiente;
+            }
+
+            // El caracter encontrado es el primero en la cola
+            if (actual_normal->dato == caracter && previo_normal == NULL)
+            {
+                *cabecera_normal = actual_normal->siguiente;
+                free(actual_normal);
+                imprimir_cola(*cabecera_preferencial, *cabecera_normal);
+                return;
+            }
+            // El caracter encontrado esta en medio o al final de la cola
+            else if (actual_normal->dato == caracter)
+            {
+                previo_normal->siguiente = actual_normal->siguiente;
+                free(actual_normal);
+                imprimir_cola(*cabecera_preferencial, *cabecera_normal);
+                return;
+            }
+            // No se encontro en la fila normal
         }
 
-        // El caracter encontrado es el primero en la cola
-        if (actual->dato == caracter && previo == NULL)
+        // Buscar en la fila preferencial
+        if (actual_preferencial != NULL)
         {
-            *cabecera = actual->siguiente;
-            free(actual);
-            imprimir_cola(*cabecera);
-            return;
+            // Recorrido de busqueda
+            while (actual_preferencial->dato != caracter && actual_preferencial->siguiente != NULL)
+            {
+                previo_preferencial = actual_preferencial;
+                actual_preferencial = actual_preferencial->siguiente;
+            }
+
+            // El caracter encontrado es el primero en la cola
+            if (actual_preferencial->dato == caracter && previo_preferencial == NULL)
+            {
+                *cabecera_preferencial = actual_preferencial->siguiente;
+                free(actual_preferencial);
+                imprimir_cola(*cabecera_preferencial, *cabecera_normal);
+                return;
+            }
+            // El caracter encontrado esta en medio o al final de la cola
+            else if (actual_preferencial->dato == caracter)
+            {
+                previo_preferencial->siguiente = actual_preferencial->siguiente;
+                free(actual_preferencial);
+                imprimir_cola(*cabecera_preferencial, *cabecera_normal);
+                return;
+            }
+            // No se encontro
         }
-        // El caracter encontrado esta en medio o al final de la cola
-        else if (actual->dato == caracter)
-        {
-            previo->siguiente = actual->siguiente;
-            free(actual);
-            imprimir_cola(*cabecera);
-            return;
-        }
-        // No se encontro
-        else
-        {
-            printf("No se encontro el caracter\n");
-            system("pause");
-            return;
-        }
+        printf("No se encontro el caracter\n");
+        system("pause");
+        return;
     }
 }
 
-void imprimir_cola(NODO *cabecera)
+void imprimir_cola(NODO *cabecera_preferencial, NODO *cabecera_normal)
 {
-    NODO *actual;
-    actual = cabecera;
+    NODO *actual_normal, *actual_preferencial;
+    actual_normal = cabecera_normal;
+    actual_preferencial = cabecera_preferencial;
 
     // La lista esta vacia
-    if (actual == NULL)
+    if (actual_normal == NULL && actual_preferencial == NULL)
     {
         printf("\nLa cola esta vacia.\n\n");
         system("pause");
@@ -302,10 +349,15 @@ void imprimir_cola(NODO *cabecera)
     else
     {
         printf("\nCOLA:\n\n");
-        while (actual != NULL)
+        while (actual_normal != NULL)
         {
-            printf(" %c ->", actual->dato);
-            actual = actual->siguiente;
+            printf(" %c ->", actual_normal->dato);
+            actual_normal = actual_normal->siguiente;
+        }
+        while (actual_preferencial != NULL)
+        {
+            printf(" %c ->", actual_preferencial->dato);
+            actual_preferencial = actual_preferencial->siguiente;
         }
         printf(" NULL\n\n");
         system("pause");
@@ -313,14 +365,18 @@ void imprimir_cola(NODO *cabecera)
     }
 }
 
-void limpiar_cola(NODO *cabecera)
+void limpiar_cola(NODO *cabecera_preferencial, NODO *cabecera_normal)
 {
-    NODO *previo, *actual;
-    previo = NULL;
-    actual = cabecera;
+    NODO *previo_preferencial, *actual_preferencial;
+    previo_preferencial = NULL;
+    actual_preferencial = cabecera_preferencial;
+
+    NODO *previo_normal, *actual_normal;
+    previo_normal = NULL;
+    actual_normal = cabecera_normal;
 
     // La lista esta vacia
-    if (actual == NULL)
+    if (actual_normal == NULL && actual_preferencial == NULL)
     {
         return;
     }
@@ -328,11 +384,17 @@ void limpiar_cola(NODO *cabecera)
     // La lista contiene al menos un elemento
     else
     {
-        while (actual != NULL)
+        while (actual_preferencial != NULL)
         {
-            previo = actual;
-            actual = actual->siguiente;
-            free(previo);
+            previo_preferencial = actual_preferencial;
+            actual_preferencial = actual_preferencial->siguiente;
+            free(previo_preferencial);
+        }
+        while (actual_normal != NULL)
+        {
+            previo_normal = actual_normal;
+            actual_normal = actual_normal->siguiente;
+            free(previo_normal);
         }
         return;
     }
